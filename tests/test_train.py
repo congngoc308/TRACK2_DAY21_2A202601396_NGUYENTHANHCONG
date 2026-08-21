@@ -1,5 +1,6 @@
 import json
 import os
+import unittest.mock as mock
 import numpy as np
 import pandas as pd
 from src.train import train
@@ -22,26 +23,25 @@ def _make_temp_data(tmp_path):
   """Tạo dataset nhỏ với cùng schema Adult để sử dụng trong test."""
   rng = np.random.default_rng(0)
   n = 200
-
-  # Tạo mảng X và y giả lập
   X = rng.random((n, len(FEATURE_NAMES)))
   y = rng.integers(0, 2, size=n)
 
-  # Tạo DataFrame
   df = pd.DataFrame(X, columns=FEATURE_NAMES)
   df["target"] = y
 
   train_path = str(tmp_path / "train.csv")
   eval_path = str(tmp_path / "holdout.csv")
 
-  # Chia dữ liệu: 160 mẫu train, 40 mẫu eval
   df.iloc[:160].to_csv(train_path, index=False)
   df.iloc[160:].to_csv(eval_path, index=False)
 
   return train_path, eval_path
 
 
-def test_train_returns_float(tmp_path):
+@mock.patch("mlflow.start_run")
+@mock.patch("mlflow.log_params")
+@mock.patch("mlflow.log_metrics")
+def test_train_returns_float(mock_metrics, mock_params, mock_run, tmp_path):
   """Kiểm tra hàm train() trả về một số thực trong [0.0, 1.0]."""
   train_path, eval_path = _make_temp_data(tmp_path)
   f1 = train(
@@ -53,7 +53,10 @@ def test_train_returns_float(tmp_path):
   assert 0.0 <= f1 <= 1.0
 
 
-def test_report_file_created(tmp_path):
+@mock.patch("mlflow.start_run")
+@mock.patch("mlflow.log_params")
+@mock.patch("mlflow.log_metrics")
+def test_report_file_created(mock_metrics, mock_params, mock_run, tmp_path):
   """Kiểm tra file outputs/report.json được tạo sau khi huấn luyện."""
   train_path, eval_path = _make_temp_data(tmp_path)
   train(
@@ -67,7 +70,10 @@ def test_report_file_created(tmp_path):
   assert "f1_score" in data and "accuracy" in data
 
 
-def test_model_file_created(tmp_path):
+@mock.patch("mlflow.start_run")
+@mock.patch("mlflow.log_params")
+@mock.patch("mlflow.log_metrics")
+def test_model_file_created(mock_metrics, mock_params, mock_run, tmp_path):
   """Kiểm tra file models/model.joblib được tạo sau khi huấn luyện."""
   train_path, eval_path = _make_temp_data(tmp_path)
   train(
