@@ -48,14 +48,23 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt boto3 "dvc[s3]"
+        run: |
+          pip install -r requirements.txt boto3 "dvc[s3]"
 
       - name: Authenticate to Cloud Storage
         run: |
           echo '${{ secrets.STORAGE_CREDENTIALS }}' > /tmp/aws-creds.json
-          echo "AWS_ACCESS_KEY_ID=$(python -c "import json; print(json.load(open('/tmp/aws-creds.json'))['aws_access_key_id'])")" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=$(python -c "import json; print(json.load(open('/tmp/aws-creds.json'))['aws_secret_access_key'])")" >> $GITHUB_ENV
-          echo "AWS_DEFAULT_REGION=$(python -c "import json; print(json.load(open('/tmp/aws-creds.json')).get('aws_default_region', 'us-east-1'))")" >> $GITHUB_ENV
+          AWS_KEY=$(python -c "import json; print(json.load(open('/tmp/aws-creds.json'))['aws_access_key_id'])")
+          AWS_SECRET=$(python -c "import json; print(json.load(open('/tmp/aws-creds.json'))['aws_secret_access_key'])")
+          AWS_REG=$(python -c "import json; print(json.load(open('/tmp/aws-creds.json')).get('aws_default_region', 'us-east-1'))")
+          
+          echo "AWS_ACCESS_KEY_ID=$AWS_KEY" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET" >> $GITHUB_ENV
+          echo "AWS_DEFAULT_REGION=$AWS_REG" >> $GITHUB_ENV
+          
+          # Cấu hình trực tiếp cho DVC remote 'labstore'
+          dvc remote modify --local labstore access_key_id "$AWS_KEY"
+          dvc remote modify --local labstore secret_access_key "$AWS_SECRET"
 
       - name: Pull data with DVC
         run: |
