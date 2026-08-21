@@ -38,10 +38,13 @@ def _make_temp_data(tmp_path):
   return train_path, eval_path
 
 
-@mock.patch("mlflow.start_run")
+@mock.patch("mlflow.sklearn.log_model")
+@mock.patch("mlflow.log_metric")
 @mock.patch("mlflow.log_params")
-@mock.patch("mlflow.log_metrics")
-def test_train_returns_float(mock_metrics, mock_params, mock_run, tmp_path):
+@mock.patch("mlflow.start_run")
+def test_train_returns_float(
+    mock_run, mock_params, mock_metric, mock_model, tmp_path
+):
   """Kiểm tra hàm train() trả về một số thực trong [0.0, 1.0]."""
   train_path, eval_path = _make_temp_data(tmp_path)
   f1 = train(
@@ -53,10 +56,13 @@ def test_train_returns_float(mock_metrics, mock_params, mock_run, tmp_path):
   assert 0.0 <= f1 <= 1.0
 
 
-@mock.patch("mlflow.start_run")
+@mock.patch("mlflow.sklearn.log_model")
+@mock.patch("mlflow.log_metric")
 @mock.patch("mlflow.log_params")
-@mock.patch("mlflow.log_metrics")
-def test_report_file_created(mock_metrics, mock_params, mock_run, tmp_path):
+@mock.patch("mlflow.start_run")
+def test_report_file_created(
+    mock_run, mock_params, mock_metric, mock_model, tmp_path
+):
   """Kiểm tra file outputs/report.json được tạo sau khi huấn luyện."""
   train_path, eval_path = _make_temp_data(tmp_path)
   train(
@@ -70,10 +76,13 @@ def test_report_file_created(mock_metrics, mock_params, mock_run, tmp_path):
   assert "f1_score" in data and "accuracy" in data
 
 
-@mock.patch("mlflow.start_run")
+@mock.patch("mlflow.sklearn.log_model")
+@mock.patch("mlflow.log_metric")
 @mock.patch("mlflow.log_params")
-@mock.patch("mlflow.log_metrics")
-def test_model_file_created(mock_metrics, mock_params, mock_run, tmp_path):
+@mock.patch("mlflow.start_run")
+def test_model_file_created(
+    mock_run, mock_params, mock_metric, mock_model, tmp_path
+):
   """Kiểm tra file models/model.joblib được tạo sau khi huấn luyện."""
   train_path, eval_path = _make_temp_data(tmp_path)
   train(
