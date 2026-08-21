@@ -5,7 +5,7 @@
 | Họ và tên | Nguyễn Thành Công |
 | MSSV | 2A202601396 |
 | Lớp / Khóa | K4 |
-| Repo GitHub | https://github.com/___/___ |
+| Repo GitHub | https://github.com/congngoc308/TRACK2_DAY21_2A202601396_NGUYENTHANHCONG |
 | Ngày nộp | 21/8/2026 |
 
 ---
@@ -41,27 +41,18 @@ $F_1\text{-score}$ của lớp dương là trung bình điều hòa giữa Preci
 
 ---
 
-## 4. So Sánh Bước 2 và Bước 3 (bắt buộc, 2 - 3 câu)
-
-<!-- Lấy số liệu từ bảng ở mục 3.6 của tasks/buoc-3.md. -->
+## 4. So Sánh Bước 2 và Bước 3
 
 | | f1_score | accuracy |
 |---|---|---|
-| Bước 2 (chỉ `train_batch1`) | ___ | ___ |
-| Bước 3 (thêm `train_batch2`) | ___ | ___ |
+| Bước 2 (chỉ `train_batch1` - 22.361 mẫu) | 0.7149 | 0.8740 |
+| Bước 3 (thêm `train_batch2` - 44.722 mẫu) | 0.7128 | 0.8740 |
 
-**Nhận xét:** ___
-
-<!--
-Một câu trả lời trung thực kiểu "f1 giảm 0,01 vì dữ liệu mới cùng phân phối, không mang
-thêm thông tin mới" được đánh giá cao hơn kết luận sai rằng thêm dữ liệu luôn tốt hơn.
--->
+**Nhận xét:** Khi tăng gấp đôi dữ liệu từ 22.361 lên 44.722 mẫu, chỉ số `f1_score` giảm nhẹ 0.0021 trong khi `accuracy` giữ nguyên. Hiện tượng này xảy ra do cả hai tập dữ liệu được trích xuất từ cùng một phân phối nguồn nên không mang lại thông tin mới, đồng thời mô hình đã tiệm cận dung lượng học tối đa với tập đặc trưng hiện tại. Điểm mấu chốt là quy trình Continuous Training đã tự động kích hoạt qua DVC/Git push và vượt qua Quality Gate ($F_1 \ge 0.65$) thành công mà không cần can thiệp thủ công.
 
 ---
 
 ## 5. Phần Bonus Đã Thực Hiện (nếu có)
-
-<!-- Xóa cả mục 5 nếu không làm bonus. Mỗi bonus tối đa 1 dòng. -->
 
 - [ ] Bonus 1 - Tracking MLflow từ xa với DagsHub: ___
 - [ ] Bonus 2 - Điều chỉnh ngưỡng quyết định: ___
