@@ -1,84 +1,95 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from google.cloud import storage
-import joblib
 import os
+import boto3
+from fastapi import FastAPI, HTTPException
+import joblib
+import pandas as pd
+from pydantic import BaseModel
 
-app = FastAPI()
+app = FastAPI(title="Income Prediction API")
 
-ARTIFACT_BUCKET = os.environ["ARTIFACT_BUCKET"]
+# Lấy tên Bucket từ biến môi trường hoặc dùng mặc định
+ARTIFACT_BUCKET = os.getenv("ARTIFACT_BUCKET", "income-lab-bucket-cong2026")
 MODEL_KEY = "artifacts/current/model.joblib"
-MODEL_PATH = os.path.expanduser("~/models/model.joblib")
+MODEL_PATH = os.path.expanduser("/tmp/model.joblib")
+
+FEATURE_NAMES = [
+    "age",
+    "workclass",
+    "education_num",
+    "marital_status",
+    "occupation",
+    "relationship",
+    "sex",
+    "capital_gain",
+    "capital_loss",
+    "hours_per_week",
+]
+
+model = None
 
 
 def download_model():
-    """
-    Tai file model.joblib tu cloud storage ve may khi server khoi dong.
+  """Tải file model.joblib từ S3 về máy khi server khởi động."""
+  global model
+  try:
+    # TODO 1 & 2 & 3: Tải model từ AWS S3
+    s3 = boto3.client("s3")
+    os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
+    s3.download_file(ARTIFACT_BUCKET, MODEL_KEY, MODEL_PATH)
 
-    Ham nay duoc goi mot lan khi module duoc import. Su dung
-    GOOGLE_APPLICATION_CREDENTIALS de xac thuc (duoc dat trong systemd service).
-    """
-    # TODO 1: Tao storage.Client()
-    # client = storage.Client()
-
-    # TODO 2: Lay bucket va blob tuong ung
-    # bucket = client.bucket(ARTIFACT_BUCKET)
-    # blob   = bucket.blob(MODEL_KEY)
-
-    # TODO 3: Tai file model xuong may
-    # blob.download_to_filename(MODEL_PATH)
-
-    # TODO 4: In thong bao thanh cong
-    # print("Model da duoc tai xuong tu cloud storage.")
-
-    pass  # xoa dong nay sau khi hoan thanh tat ca TODO ben tren
+    # TODO 4: In thông báo thành công
+    print("Model đã được tải xuống từ S3 thành công.")
+    model = joblib.load(MODEL_PATH)
+  except Exception as e:
+    print(f"Lỗi tải model từ S3: {e}")
+    # Fallback nếu file model cục bộ đã có sẵn
+    if os.path.exists("models/model.joblib"):
+      model = joblib.load("models/model.joblib")
 
 
-download_model()
-model = joblib.load(MODEL_PATH)
+@app.on_event("startup")
+def startup_event():
+  download_model()
 
 
 class ScoreRequest(BaseModel):
-    features: list[float]
+  features: list[float]
 
 
 @app.get("/healthz")
 def healthz():
-    """
-    Endpoint kiem tra suc khoe server.
-    GitHub Actions goi endpoint nay sau khi deploy de xac nhan server dang chay.
-
-    Tra ve: {"status": "ok"}
-    """
-    # TODO 5: Tra ve dict {"status": "ok"}
-    pass  # xoa dong nay sau khi hoan thanh
+  """TODO 5: Endpoint kiểm tra sức khỏe server (trả về status ok)."""
+  return {"status": "ok"}
 
 
 @app.post("/score")
 def score(req: ScoreRequest):
-    """
-    Endpoint suy luan chinh.
+  """Endpoint suy luận chính phục vụ dự đoán."""
+  global model
+  if model is None:
+    download_model()
+    if model is None:
+      raise HTTPException(
+          status_code=503, detail="Mô hình chưa sẵn sàng (chưa tải được model)"
+      )
 
-    Dau vao : JSON {"features": [f1, f2, ..., f10]}
-    Dau ra  : JSON {"prediction": <0|1>, "label": <"thu_nhap_thap"|"thu_nhap_cao">}
+  # TODO 6: Kiểm tra số lượng đặc trưng đầu vào (phải đúng 10 đặc trưng)
+  if len(req.features) != 10:
+    raise HTTPException(
+        status_code=400,
+        detail=f"Cần chính xác 10 đặc trưng, nhận được {len(req.features)}",
+    )
 
-    Thu tu 10 dac trung (khop voi thu tu trong FEATURE_NAMES cua test):
-        age, workclass, education_num, marital_status, occupation,
-        relationship, sex, capital_gain, capital_loss, hours_per_week
-    """
-    # TODO 6: Kiem tra so luong dac trung.
-    # Neu len(req.features) != 10, raise HTTPException(status_code=400, ...)
+  # TODO 7: Gọi model.predict để dự đoán
+  df = pd.DataFrame([req.features], columns=FEATURE_NAMES)
+  prediction = int(model.predict(df)[0])
 
-    # TODO 7: Goi model.predict([req.features]) de lay ket qua du doan.
-    # pred = model.predict(...)
-
-    # TODO 8: Tra ve dict chua "prediction" (int) va "label" (string).
-    # Nhan tuong ung: 0 -> "thu_nhap_thap", 1 -> "thu_nhap_cao"
-    # return {"prediction": ..., "label": ...}
-
-    pass  # xoa dong nay sau khi hoan thanh tat ca TODO ben tren
+  # TODO 8: Trả về dict chứa prediction và label tương ứng
+  label = "thu_nhap_cao" if prediction == 1 else "thu_nhap_thap"
+  return {"prediction": prediction, "label": label}
 
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+  import uvicorn
+
+  uvicorn.run(app, host="0.0.0.0", port=8080)
